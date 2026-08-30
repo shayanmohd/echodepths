@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="EchoDepths — ping to see. stay silent to survive. a roguelite played in total darkness.">
+<title>echodepths</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="pal-green">
+<canvas id="c" aria-hidden="true"></canvas>
+
+<div id="hud" hidden>
+  <div id="depth" aria-live="off">1,000 m</div>
+  <div id="biome"></div>
+  <button id="pause" aria-label="pause">||</button>
+  <div id="hp" aria-label="health"></div>
+  <button id="pebble" aria-label="throw pebble">◦◦ pebble</button>
+  <div id="hint" aria-live="polite"></div>
+  <div id="float"></div>
+</div>
+<div id="sr" class="visually-hidden" aria-live="polite" role="status"></div>
+
+<div id="screens">
+  <section id="title" class="screen">
+    <div class="stack">
+      <h1 class="wordmark">echo<span>depths</span></h1>
+      <p class="tag">to see is to be seen.</p>
+      <nav class="menu">
+        <button class="mbtn" data-go="dive">dive</button>
+        <button class="mbtn" data-go="daily">daily descent</button>
+        <button class="mbtn" data-go="grotto">grotto</button>
+        <button class="mbtn" data-go="options">options</button>
+      </nav>
+      <p class="stats" id="title-stats"></p>
+      <p class="fine">headphones recommended · haptics on</p>
+    </div>
+  </section>
+
+  <section id="daily" class="screen" hidden>
+    <div class="stack">
+      <h2>daily descent</h2>
+      <p class="muted" id="daily-date"></p>
+      <p class="body">one cave. one attempt. same seed for everyone today.</p>
+      <div id="daily-result" class="card" hidden></div>
+      <button class="mbtn primary" id="daily-dive">dive</button>
+      <button class="mbtn" id="daily-share" hidden>share result</button>
+      <button class="mbtn" data-go="title">back</button>
+      <p class="fine">global leaderboard arrives with v1.0 — today's result is kept on this device.</p>
+    </div>
+  </section>
+
+  <section id="grotto" class="screen" hidden>
+    <div class="stack wide">
+      <h2>the grotto</h2>
+      <p class="muted">otoliths: <b id="oto-count">0</b> · long-press an evolution to feel it before you buy.</p>
+      <div id="evo-list" class="evo-grid"></div>
+      <button class="mbtn" data-go="title">back</button>
+    </div>
+  </section>
+
+  <section id="options" class="screen" hidden>
+    <div class="stack wide">
+      <h2>options</h2>
+      <div class="opt-row"><span>phosphor</span><div class="seg" id="opt-palette"><button data-v="green" class="on">green</button><button data-v="amber">amber</button><button data-v="ice">ice</button></div></div>
+      <div class="opt-row"><span>haptics</span><div class="seg" id="opt-haptics"><button data-v="1" class="on">on</button><button data-v="0">off</button></div></div>
+      <div class="opt-row"><span>haptic strength</span><input type="range" id="opt-hstr" min="0.3" max="1.5" step="0.1" value="1" aria-label="haptic strength"></div>
+      <div class="opt-row"><span>audio</span><div class="seg" id="opt-audio"><button data-v="1" class="on">on</button><button data-v="0">off</button></div></div>
+      <div class="opt-row"><span>ambience</span><input type="range" id="opt-amb" min="0" max="1" step="0.05" value="0.7" aria-label="ambience volume"></div>
+      <div class="opt-row"><span>eyes closed mode</span><div class="seg" id="opt-eyes"><button data-v="0" class="on">off</button><button data-v="1">on</button></div></div>
+      <p class="fine">eyes closed hides all visuals. sound and haptics carry everything; predator bearings are also spoken.</p>
+      <div class="opt-row"><span>abyssal calm (assist)</span><div class="seg" id="opt-calm"><button data-v="0" class="on">off</button><button data-v="1">on</button></div></div>
+      <p class="fine">calm: slower predators, longer fade, one extra hit. daily descent is unranked in calm.</p>
+      <button class="mbtn" id="opt-haptest">test haptics</button>
+      <button class="mbtn danger" id="opt-reset">erase save</button>
+      <button class="mbtn" data-go="title">back</button>
+      <p class="fine">no flashing. no ads. no accounts. v0.1 vertical slice.</p>
+    </div>
+  </section>
+
+  <section id="pausemenu" class="screen dim" hidden>
+    <div class="stack">
+      <h2>held breath</h2>
+      <button class="mbtn primary" id="pm-resume">resume</button>
+      <button class="mbtn" id="pm-surface">surface (abandon run)</button>
+    </div>
+  </section>
+
+  <section id="death" class="screen dim" hidden>
+    <div class="stack bottom">
+      <h2 id="death-title">the dark kept you.</h2>
+      <p class="body" id="death-cause"></p>
+      <div class="statgrid">
+        <div><small>depth</small><b id="d-depth"></b></div>
+        <div><small>chambers</small><b id="d-chambers"></b></div>
+        <div><small>otoliths</small><b id="d-oto"></b></div>
+        <div><small>shouts</small><b id="d-shouts"></b></div>
+      </div>
+      <button class="mbtn primary" id="d-surface">surface</button>
+    </div>
+  </section>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/haptics.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/procgen.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
