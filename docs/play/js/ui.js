@@ -15,6 +15,8 @@ const Save = (() => {
       if (!Array.isArray(data.evolutions)) data.evolutions = [];
       if (!data.daily || typeof data.daily !== 'object') data.daily = {};
       if (!data.stats.deaths || typeof data.stats.deaths !== 'object') data.stats.deaths = {};
+      const num = (o, k, d) => { if (typeof o[k] !== 'number' || !isFinite(o[k])) o[k] = d; };
+      num(data, 'otoliths', 0); ['runs', 'maxDepth', 'shouts', 'silentClears'].forEach(k => num(data.stats, k, 0));
     }
   } catch (e) {}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
@@ -156,7 +158,7 @@ const App = (() => {
         const end = () => { clearTimeout(pressT); b.classList.remove('pressing'); if (!shortT) cost.textContent = label(); };
         b.addEventListener('pointerup', end); b.addEventListener('pointerleave', end); b.addEventListener('pointercancel', end);
         b.addEventListener('click', () => {
-          if (previewed || owned) return;
+          if (previewed || D.evolutions.includes(e.id)) return; // live, not the captured flag: a stale card must never sell twice
           if (D.otoliths < e.cost) { // inline, never an alert
             Sfx.uiTick(); cost.textContent = `need ${e.cost - D.otoliths} more`; cost.classList.add('short');
             clearTimeout(shortT); shortT = setTimeout(() => { shortT = null; cost.textContent = label(); cost.classList.remove('short'); }, 1500); return;

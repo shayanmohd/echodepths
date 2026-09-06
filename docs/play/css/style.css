@@ -73,7 +73,7 @@ body.eyes-closed #hint, body.eyes-closed #float, body.eyes-closed #depth, body.e
 .mark.small { width: 40px; height: 40px; margin-bottom: 0; }
 
 h1.wordmark { font-weight: 300; font-size: clamp(42px, 12.5vw, 64px); letter-spacing: -.015em; line-height: 1; color: var(--phos); margin: 0; text-shadow: 0 0 22px var(--glow); text-wrap: balance; }
-h1.wordmark span { color: var(--phos-dim); }
+h1.wordmark span { color: color-mix(in srgb, var(--phos) 20%, var(--phos-dim)); } /* the dim half still clears 3:1 in every palette over the lit scene */
 h2 { font-weight: 400; font-size: 24px; letter-spacing: .14em; color: var(--phos); margin: 0; text-wrap: balance; text-shadow: 0 0 16px var(--glow); }
 h1:focus, h2:focus { outline: none; }
 .tag { color: var(--muted); margin: 0 0 6px; letter-spacing: .22em; font-size: 12px; }

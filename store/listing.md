@@ -54,4 +54,4 @@ Privacy policy: https://shayanmohd.github.io/echodepths/privacy-policy.html
 Horror atmosphere, no gore, no depicted violence (a creature "bites" and you lose a heart, shown as a fading ring). No user-generated content, no chat, no purchases.
 
 ## Declarations (read off the built manifest and the code)
-Permissions: VIBRATE only. No INTERNET. No analytics or ads SDKs. Data safety: no data collected or shared. Advertising ID: not used. Ads: none. Target audience: 13+ (horror themes; IARC Teen). Financial features: none. Health: none. Government app: no.
+Permissions: VIBRATE only. No INTERNET. No analytics or ads SDKs. Data safety: no data collected or shared. Advertising ID: not used. Ads: none. Target audience: 13 and over (horror themes). Content rating from the IARC questionnaire: ESRB E10+, fantasy violence. Financial features: none. Health: none. Government app: no.
