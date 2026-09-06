@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Display"; src: url("display.ttf"); font-weight: 300 700; }
+  html, body { margin: 0; width: 1024px; height: 500px; overflow: hidden; }
+  body {
+    position: relative; color: #dcf8fc; font-family: "Display", "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(38% 70% at 26% 52%, rgba(125, 241, 255, 0.34), rgba(47, 184, 210, 0.10) 45%, rgba(47, 184, 210, 0) 72%),
+      radial-gradient(90% 90% at 50% 45%, #0d3247 0%, #071a2c 52%, #030a14 100%);
+  }
+  svg.walls { position: absolute; inset: 0; width: 1024px; height: 500px; }
+  .snow { position: absolute; border-radius: 50%; background: #bff6ff; }
+  svg.mark { position: absolute; left: 62px; top: 46px; width: 408px; height: 408px; }
+  .copy { position: absolute; left: 492px; top: 158px; width: 520px; }
+  .rule { position: absolute; left: 496px; top: 142px; width: 64px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #d6fcff, #2fb8d2); box-shadow: 0 0 14px rgba(125, 241, 255, 0.6); }
+  h1 { margin: 0; font-size: 86px; line-height: 1; letter-spacing: -0.03em; font-weight: 300; color: #f2fdff;
+       text-shadow: 0 0 34px rgba(125, 241, 255, 0.35), 0 6px 26px rgba(2, 7, 14, 0.6); }
+  h1 span { color: #5fe7f8; }
+  p { margin: 20px 0 0 4px; font-size: 29px; line-height: 1.3; color: #9df2ff; max-width: 500px; letter-spacing: 0.01em; }
+  p small { display: block; margin-top: 14px; font-size: 18px; letter-spacing: 0.18em; color: #5fa6b5; text-transform: lowercase; }
+</style>
+</head>
+<body>
+  <svg class="walls" viewBox="0 0 1024 500" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#1d6f82" stroke-width="2" opacity="0.42">
+      <path d="M-10 92 L40 78 L74 104 L128 90 L160 120 L214 106 L246 132 L300 118"/>
+      <path d="M620 26 L668 48 L716 30 L760 62 L820 44 L868 74 L930 56 L990 84 L1040 70"/>
+      <path d="M-10 420 L48 402 L84 434 L146 420 L188 454 L250 440"/>
+      <path d="M700 470 L752 446 L806 476 L864 452 L918 486 L982 462 L1040 490"/>
+      <path d="M980 150 L1004 190 L986 238 L1010 284 L992 330 L1014 372"/>
+    </g>
+    <g stroke="#2fb8d2" stroke-width="2.2" opacity="0.55">
+      <path d="M560 372 L604 356 L640 382 L690 366 L722 396"/>
+      <path d="M740 118 L784 140 L836 122 L884 152"/>
+    </g>
+  </svg>
+  <div class="snow" style="left:130px;top:40px;width:4px;height:4px;opacity:.55"></div>
+  <div class="snow" style="left:520px;top:70px;width:3px;height:3px;opacity:.45"></div>
+  <div class="snow" style="left:880px;top:110px;width:4px;height:4px;opacity:.5"></div>
+  <div class="snow" style="left:960px;top:400px;width:3px;height:3px;opacity:.4"></div>
+  <div class="snow" style="left:40px;top:330px;width:3px;height:3px;opacity:.4"></div>
+  <div class="snow" style="left:470px;top:440px;width:4px;height:4px;opacity:.45"></div>
+  <div class="snow" style="left:700px;top:250px;width:2px;height:2px;opacity:.35"></div>
+
+  <svg class="mark" viewBox="18 18 72 72" aria-hidden="true">
+    <defs>
+      <radialGradient id="lamp" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#d8fbff"/><stop offset="1" stop-color="#8eefff"/></radialGradient>
+      <linearGradient id="ringA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6fcff"/><stop offset="1" stop-color="#5fe7f8"/></linearGradient>
+      <linearGradient id="ringB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#86ecfa"/><stop offset="1" stop-color="#2fb8d2"/></linearGradient>
+      <linearGradient id="ringC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#46bfd4"/><stop offset="1" stop-color="#1b8296"/></linearGradient>
+      <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9df2ff"/><stop offset="1" stop-color="#2fb8d2"/></linearGradient>
+      <filter id="soft" filterUnits="userSpaceOnUse" x="0" y="0" width="108" height="108">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/><feOffset dy="2.2" result="o"/>
+        <feFlood flood-color="#02070e" flood-opacity="0.7"/><feComposite in2="o" operator="in"/>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="halo" filterUnits="userSpaceOnUse" x="0" y="0" width="108" height="108"><feGaussianBlur stdDeviation="3.2"/></filter>
+    </defs>
+    <path d="M27 44 L31 36 L37 32 L41 26" fill="none" stroke="#2fb8d2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" filter="url(#halo)"/>
+    <path d="M27 44 L31 36 L37 32 L41 26" fill="none" stroke="url(#wall)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#soft)"/>
+    <g fill="none" filter="url(#soft)">
+      <circle cx="54" cy="54" r="27" stroke="url(#ringC)" stroke-width="2" opacity="0.82"/>
+      <circle cx="54" cy="54" r="18.5" stroke="url(#ringB)" stroke-width="2.8" opacity="0.92"/>
+      <circle cx="54" cy="54" r="10.5" stroke="url(#ringA)" stroke-width="3.6"/>
+    </g>
+    <path d="M45.8 48.2 A10.5 10.5 0 0 1 62.2 48.2" fill="none" stroke="#ffffff" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+    <path d="M39.6 46.2 A18.5 18.5 0 0 1 68.4 46.2" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-linecap="round" opacity="0.28"/>
+    <circle cx="54" cy="54" r="7" fill="#8ff3ff" opacity="0.75" filter="url(#halo)"/>
+    <circle cx="54" cy="54" r="4.3" fill="url(#lamp)"/>
+    <circle cx="54" cy="54" r="4.3" fill="none" stroke="#ffffff" stroke-width="0.6" opacity="0.7"/>
+  </svg>
+
+  <div class="rule"></div>
+  <div class="copy">
+    <h1>Echo<span>Depths</span></h1>
+    <p>Ping to see.<br>Stay silent to survive.<small>a roguelite played in total darkness</small></p>
+  </div>
+</body>
+</html>

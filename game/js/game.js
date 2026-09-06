@@ -5,8 +5,12 @@ const Game = (() => {
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d', { alpha: false });
   let W = 0, H = 0, DPR = 1, ppm = 36;
-  const PAL = { green: { phos: [125, 255, 156], ember: [255, 106, 42] }, amber: { phos: [255, 179, 71], ember: [255, 77, 42] }, ice: { phos: [155, 232, 255], ember: [255, 122, 92] } };
-  let pal = PAL.green;
+  // phos is the fresh reveal, dim is what it fades through before the dark takes it back. One hue family per palette;
+  // the warm ember is reserved for danger: damage, the noise ring, heat pits.
+  const PAL = { ice: { phos: [110, 240, 255], dim: [36, 150, 172] }, green: { phos: [125, 255, 156], dim: [52, 150, 88] }, amber: { phos: [255, 179, 71], dim: [176, 110, 38] } };
+  const EMBER = [255, 122, 61];
+  const BG = '#050d16';
+  let pal = PAL.ice;
   const listeners = {};
   const on = (ev, fn) => { (listeners[ev] || (listeners[ev] = [])).push(fn); };
   const emit = (ev, d) => { (listeners[ev] || []).forEach(f => f(d)); };
@@ -34,7 +38,6 @@ const Game = (() => {
   let playerField = null, playerFieldT = -1;
   let transition = 0, transitionText = '';
   let deathAnim = 0;
-  let titleRing = 0;
   const ptr = { down: false, sx: 0, sy: 0, x: 0, y: 0, t0: 0, moved: false, id: null, tick1: false, tick2: false };
   let lastAnnounce = 0;
 
@@ -50,7 +53,7 @@ const Game = (() => {
 
   function setSettings(s) {
     Object.assign(settings, s);
-    pal = PAL[settings.palette] || PAL.green;
+    pal = PAL[settings.palette] || PAL.ice;
     Haptics.setEnabled(settings.haptics); Haptics.setStrength(settings.hapticStrength);
     Sfx.setEnabled(settings.audio); Sfx.setMix('ambience', settings.ambience);
     document.body.classList.toggle('eyes-closed', !!settings.eyesClosed);
@@ -171,14 +174,14 @@ const Game = (() => {
   }
   function die(cause) {
     state = 'dead'; run.cause = cause; deathAnim = 0;
-    Sfx.death(); Haptics.death(); Sfx.stopAllHums();
+    Sfx.release(); Sfx.death(); Haptics.death(); Sfx.stopAllHums();
     const earned = run.oto + run.cleared * 2 + Math.floor(run.cleared / 4) * 5;
     emit('death', { cause, depth: run.depth, chambers: run.cleared, oto: earned, collected: run.oto, shouts: run.shouts, silentClears: run.silentClears, daily: run.daily, calm: settings.calm, tutorialDone: run.tut ? run.tut.step >= 5 : true });
   }
   function abandon() { if (!run || state === 'idle') return; die('you surfaced'); }
-  function pause() { if (state === 'run') { state = 'paused'; emit('paused'); } }
-  function resume() { if (state === 'paused') { state = 'run'; lastT = performance.now(); Sfx.resume(); } }
-  function toTitle() { state = 'idle'; Sfx.stopAllHums(); if (ch) (ch.hums || []).forEach(h => h.stop()); run = null; ch = null; }
+  function pause() { if (state === 'run') { state = 'paused'; Sfx.suspend(); emit('paused'); } }
+  function resume() { if (state === 'paused') { state = 'run'; lastT = performance.now(); Sfx.release(); } }
+  function toTitle() { state = 'idle'; Sfx.release(); Sfx.stopAllHums(); if (ch) (ch.hums || []).forEach(h => h.stop()); run = null; ch = null; }
 
   function descend() {
     run.cleared++; run.chamber++;
@@ -201,7 +204,7 @@ const Game = (() => {
     const t = run.tut; if (!t) return;
     if (t.step === 0 && kind === 'ping') { t.step = 1; t.t = 0; hint(''); }
     else if (t.step === 1 && kind === 'ping' && (arg === 'chirp' || arg === 'shout')) { t.step = 2; t.t = 0; hint(''); }
-    else if (t.step === 2 && kind === 'woke') { t.t = 0; hint('…something heard that.'); t.woke = true; }
+    else if (t.step === 2 && kind === 'woke') { t.t = 0; hint('something heard that.'); t.woke = true; }
     else if (kind === 'exit') { t.step = 6; hint(''); }
   }
   on('woke', () => tutEvent('woke'));
@@ -398,14 +401,15 @@ const Game = (() => {
   }
   function colorFor(b) {
     const t = U.clamp(b, 0, 1); let r, g, bl, a;
-    if (t > 0.45) { const m = (t - 0.45) / 0.55; r = U.lerp(pal.ember[0], pal.phos[0], m); g = U.lerp(pal.ember[1], pal.phos[1], m); bl = U.lerp(pal.ember[2], pal.phos[2], m); a = 0.35 + 0.65 * m; }
-    else { r = pal.ember[0]; g = pal.ember[1]; bl = pal.ember[2]; a = 0.35 * Math.pow(t / 0.45, 1.2); }
+    if (t > 0.45) { const m = (t - 0.45) / 0.55; r = U.lerp(pal.dim[0], pal.phos[0], m); g = U.lerp(pal.dim[1], pal.phos[1], m); bl = U.lerp(pal.dim[2], pal.phos[2], m); a = 0.4 + 0.6 * m; }
+    else { r = pal.dim[0]; g = pal.dim[1]; bl = pal.dim[2]; a = 0.4 * Math.pow(t / 0.45, 1.2); }
     return [r | 0, g | 0, bl | 0, a];
   }
   const NB = 14; const bins = []; for (let i = 0; i < NB; i++) bins.push([]);
-  function drawSegBins(fixed) {
+  function drawSegBins(chamber, fixed, brightFn) {
     for (let i = 0; i < NB; i++) bins[i].length = 0;
-    for (const s of ch.segs) { const b = fixed != null ? fixed : brightAt(s.air); if (b < 0.015) continue; bins[Math.min(NB - 1, (b * NB) | 0)].push(s); }
+    const bf = brightFn || brightAt;
+    for (const s of chamber.segs) { const b = fixed != null ? fixed : bf(s.air); if (b < 0.015) continue; bins[Math.min(NB - 1, (b * NB) | 0)].push(s); }
     ctx.lineCap = 'round';
     for (let i = 0; i < NB; i++) {
       const arr = bins[i]; if (!arr.length) continue; const [r, g, b, a] = colorFor((i + 0.5) / NB);
@@ -416,7 +420,11 @@ const Game = (() => {
     }
   }
   function phos(a) { return `rgba(${pal.phos[0]},${pal.phos[1]},${pal.phos[2]},${a})`; }
-  function ember(a) { return `rgba(${pal.ember[0]},${pal.ember[1]},${pal.ember[2]},${a})`; }
+  function ember(a) { return `rgba(${EMBER[0]},${EMBER[1]},${EMBER[2]},${a})`; }
+  function lampGlow(x, y, r, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, phos(a)); g.addColorStop(0.4, phos(a * 0.3)); g.addColorStop(1, phos(0));
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
 
   function drawPredator(p, b, heat) {
     if (b < 0.02 && !heat) return;
@@ -443,6 +451,8 @@ const Game = (() => {
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
     const L = 0.6 * ppm; const ph = time * (5 + sp * 5); const amp = 0.06 * ppm * (0.35 + sp / 3);
     const a = run.invuln > 0 ? 0.25 + 0.3 * Math.abs(Math.sin(time * 14)) : 0.62;
+    // the salamander is the lamp: a faint bioluminescent bloom that marks you without revealing anything
+    lampGlow(0, 0, ppm * 1.1, 0.16 * (a / 0.62));
     ctx.strokeStyle = phos(a); ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     // salamander: blunt wedge head, tapering body, long swaying tail
     const w1 = Math.sin(ph) * amp, w2 = Math.sin(ph - 1.6) * amp * 1.8, w3 = Math.sin(ph - 3.2) * amp * 2.6;
@@ -465,6 +475,11 @@ const Game = (() => {
     // charge arc while holding still
     if (ptr.down && !ptr.moved) { const hold = (performance.now() - ptr.t0) / 1000; const lvl = hold < 0.25 ? hold / 0.25 : hold < 0.9 ? 1 + (hold - 0.25) / 0.65 : 2 + Math.min(1, (hold - 0.9) / 0.6); ctx.beginPath(); ctx.arc(x, y, 0.5 * ppm + lvl * 0.16 * ppm, -Math.PI / 2, -Math.PI / 2 + U.TAU * Math.min(1, lvl / 3)); ctx.strokeStyle = phos(0.35); ctx.lineWidth = 1.2; ctx.stroke(); for (let i = 1; i <= 3; i++) { const aa = -Math.PI / 2 + U.TAU * i / 3; ctx.beginPath(); ctx.arc(x, y, 0.5 * ppm + lvl * 0.16 * ppm, aa - 0.02, aa + 0.02); ctx.strokeStyle = phos(0.7); ctx.lineWidth = 3; ctx.stroke(); } }
     if (run.dmgPulse > 0) { ctx.beginPath(); ctx.arc(x, y, (1 - run.dmgPulse) * 2.2 * ppm + 0.4 * ppm, 0, U.TAU); ctx.strokeStyle = ember(run.dmgPulse * 0.6); ctx.lineWidth = 2; ctx.stroke(); }
+    // first run, before the first tap: the app's mark breathes out of the salamander, the same ring the launcher icon shows
+    if (run.tut && run.tut.step === 0 && !ptr.down) {
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 3; i++) { const ph = REDUCE ? (i + 1) / 3.5 : ((time / 2.6) + i / 3) % 1; const rr = (0.45 + ph * 2.2) * ppm; ctx.beginPath(); ctx.arc(x, y, rr, 0, U.TAU); ctx.strokeStyle = phos(0.5 * (1 - ph) * (1 - ph)); ctx.stroke(); }
+    }
   }
   function drawWavefronts() {
     ctx.fillStyle = phos(1);
@@ -477,7 +492,7 @@ const Game = (() => {
     }
   }
   function drawWorld() {
-    drawSegBins();
+    drawSegBins(ch);
     drawWavefronts();
     // exit: ring of dots
     const eb = brightAt(ch.cellOf(ch.exit.x, ch.exit.y));
@@ -499,7 +514,7 @@ const Game = (() => {
   function drawDeath() {
     // sonar art of the final chamber: faint full geometry + the path you swam + every sound you made
     const fit = Math.min(W / ch.wm, H / ch.hm) * 0.88; const savedPpm = ppm; ppm = fit; const sc = { x: cam.x, y: cam.y }; cam.x = ch.wm / 2; cam.y = ch.hm / 2;
-    drawSegBins(0.14);
+    drawSegBins(ch, 0.3);
     const path = run.path.filter(p => p.c === run.chamber); const n = Math.floor(path.length * Math.min(1, deathAnim / 3));
     if (n > 1) { ctx.strokeStyle = phos(0.7); ctx.lineWidth = 1.4; ctx.lineJoin = 'round'; ctx.beginPath(); for (let i = 0; i < n; i++) { const p = path[i]; if (i) ctx.lineTo(sx(p.x), sy(p.y)); else ctx.moveTo(sx(p.x), sy(p.y)); } ctx.stroke(); }
     const logs = run.pingLog.filter(p => p.c === run.chamber); const m = Math.floor(logs.length * Math.min(1, deathAnim / 3));
@@ -507,19 +522,57 @@ const Game = (() => {
     if (path.length) { const p = path[path.length - 1]; if (deathAnim > 3) { ctx.strokeStyle = ember(0.7); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 5 + Math.sin(time * 3) * 1.5, 0, U.TAU); ctx.stroke(); } }
     ppm = savedPpm; cam.x = sc.x; cam.y = sc.y;
   }
+  // ---------- title: the signature. A lamp hangs in a real chamber; every few seconds a ring of sound leaves it
+  // and the cave walls light up as the sound reaches them, around corners, then fade. The same mechanic as the game.
+  let tl = null;
+  const T_SPEED = 6, T_RAD = 17, T_DUR = 4.2, T_PERIOD = 3.4;
+  const REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function titleInit() {
+    const chamber = Procgen.generate(0x5EA7ED, 'hall', 0);
+    let best = -1, bd = 1e9; const cx = chamber.wm / 2, cy = chamber.hm * 0.46;
+    for (let i = 0; i < chamber.w * chamber.h; i++) { if (chamber.grid[i] || !chamber.reach[i]) continue; const c = chamber.center(i); const d = U.dist(c.x, c.y, cx, cy); if (d < bd) { bd = d; best = i; } }
+    const lamp = chamber.center(best);
+    tl = { chamber, lamp, field: Procgen.distField(chamber, lamp.x, lamp.y), t: 0, pings: [], next: 0.5, reduce: REDUCE, anchorT: -9, lampY: H * 0.34 };
+  }
   function drawTitle(dt) {
-    titleRing += dt; const period = 3.4; const t = (titleRing % period) / period;
-    if (titleRing % period < dt) Sfx.titlePulse();
-    const R = t * Math.min(W, H) * 0.7; const a = (1 - t) * 0.35;
-    ctx.strokeStyle = phos(a); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(W / 2, H * 0.42, R, 0, U.TAU); ctx.stroke();
-    ctx.strokeStyle = phos(a * 0.4); ctx.lineWidth = 4; ctx.stroke();
-    ctx.fillStyle = phos(0.18); for (let i = 0; i < 26; i++) { const px = U.hash2(i, 1, 7) * W, py = ((U.hash2(i, 2, 7) + titleRing * 0.008 * (0.5 + U.hash2(i, 3, 7))) % 1) * H; ctx.fillRect(px, py, 1.5, 1.5); }
+    if (!tl) titleInit();
+    tl.t += dt; const T = tl.t; const { chamber, lamp, field } = tl;
+    const savedPpm = ppm, scx = cam.x, scy = cam.y;
+    // the lamp hangs just above the wordmark, so the scene and the name read as one thing on any screen height
+    if (T - tl.anchorT > 0.5) { tl.anchorT = T; const wm = document.querySelector('#title .wordmark'); const r = wm && !document.getElementById('title').hidden ? wm.getBoundingClientRect() : null; tl.lampY = r ? U.clamp(r.top - 96, 64, H * 0.5) : H * 0.34; }
+    ppm = Math.min(W / chamber.wm, H / chamber.hm) * 1.08; cam.x = lamp.x; cam.y = lamp.y + (H / 2 - tl.lampY) / ppm;
+    if (!tl.reduce && T >= tl.next) { tl.pings.push({ t0: T }); tl.next = T + T_PERIOD; Sfx.titlePulse(); }
+    tl.pings = tl.pings.filter(p => T - p.t0 < T_DUR + T_RAD / T_SPEED);
+    const bright = cell => {
+      const d = field[cell]; if (d >= 1e9 || d > T_RAD) return 0;
+      if (tl.reduce) return 0.7 * (1 - (d / T_RAD) * (d / T_RAD));
+      let b = 0;
+      for (const p of tl.pings) { const el = T - p.t0, arr = d / T_SPEED; if (el < arr) continue; const age = el - arr; if (age > T_DUR) continue; const v = (1 - (d / T_RAD) * (d / T_RAD)) * Math.pow(1 - age / T_DUR, 1.5); if (v > b) b = v; }
+      return b;
+    };
+    drawSegBins(chamber, null, bright);
+    // the wavefront itself, following the sound field so it bends into side passages
+    const N = chamber.w * chamber.h;
+    for (const p of tl.pings) {
+      const front = (T - p.t0) * T_SPEED; if (front > T_RAD) continue; const a = 0.55 * (1 - front / T_RAD); if (a < 0.02) continue;
+      ctx.fillStyle = phos(a);
+      for (let i = 0; i < N; i++) { const d = field[i]; if (d >= 1e9 || Math.abs(d - front) > 0.3) continue; const c = chamber.center(i); ctx.fillRect(sx(c.x) - 1, sy(c.y) - 1, 2, 2); }
+    }
+    // the lamp: a bioluminescent point, breathing
+    const lx = sx(lamp.x), ly = sy(lamp.y); const pulse = tl.reduce ? 0.5 : 0.5 + 0.5 * Math.sin(T * 1.8);
+    lampGlow(lx, ly, ppm * 2.6, 0.34 + 0.08 * pulse);
+    ctx.fillStyle = phos(0.55); ctx.beginPath(); ctx.arc(lx, ly, 5.5 + pulse * 1.5, 0, U.TAU); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,255,${0.8 + 0.2 * pulse})`; ctx.beginPath(); ctx.arc(lx, ly, 2.6, 0, U.TAU); ctx.fill();
+    // marine snow drifting down through the chamber
+    ctx.fillStyle = phos(0.16);
+    for (let i = 0; i < 30; i++) { const px = U.hash2(i, 1, 7) * W, py = ((U.hash2(i, 2, 7) + (tl.reduce ? 0 : T * 0.008 * (0.5 + U.hash2(i, 3, 7)))) % 1) * H; ctx.fillRect(px, py, 1.5, 1.5); }
+    ppm = savedPpm; cam.x = scx; cam.y = scy;
   }
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - lastT) / 1000 || 0); lastT = now;
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
     if (state === 'idle') { drawTitle(dt); return; }
     if (state === 'run') update(dt);
     if (state === 'dead') { deathAnim += dt; time += dt; drawDeath(); return; }
@@ -530,7 +583,10 @@ const Game = (() => {
   }
   raf = requestAnimationFrame(frame);
 
-  // dev-only hooks (http://.../?debug): jump chambers / take damage without playing them out
-  const debug = /debug/.test(location.search) ? { descend: () => { if (state === 'run') descend(); }, hurt: (n) => damage(n || 1, 'the debugger') } : null;
+  // dev-only hooks (add ?debug to the url): jump chambers / take damage without playing them out
+  const debug = /debug/.test(location.search) ? { descend: () => { if (state === 'run') descend(); }, hurt: (n, cause) => damage(n || 1, cause || 'the debugger') } : null;
   return { on, startRun, pause, resume, abandon, toTitle, throwPebble, setSettings, setEvolutions, state: () => state, run: () => run, ping, debug };
 })();
+
+// The Android shell drives pause and back through window.Game.
+window.Game = Game;

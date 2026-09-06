@@ -4,7 +4,7 @@
 const Sfx = (() => {
   let ctx = null, master, cueBus, ambBus, echoIn, noiseBuf;
   const mix = { master: 0.9, ambience: 0.7, cues: 1.0 };
-  let enabled = true;
+  let enabled = true, held = false;
   const hums = new Set();
 
   function init() {
@@ -27,7 +27,11 @@ const Sfx = (() => {
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     return true;
   }
-  function resume() { if (!init()) return; if (ctx.state === 'suspended') ctx.resume(); }
+  function resume() { if (held || !init()) return; if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} } }
+  // held breath: nothing hums while the run is paused or the app is in the background. suspend() holds the
+  // context until release(); a stray resume() (a tap on the pause menu, the activity coming back) cannot let the cave leak through.
+  function suspend() { held = true; if (ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) {} } }
+  function release() { held = false; resume(); }
   const now = () => ctx ? ctx.currentTime : 0;
   function ok() { return enabled && ctx && ctx.state === 'running'; }
 
@@ -169,5 +173,5 @@ const Sfx = (() => {
   function setMix(k, v) { mix[k] = U.clamp(v, 0, 1); if (!ctx) return; if (k === 'master') master.gain.value = mix.master; if (k === 'cues') cueBus.gain.value = mix.cues; if (k === 'ambience') ambBus.gain.value = mix.ambience; }
   function setEnabled(v) { enabled = !!v; if (ctx) master.gain.setTargetAtTime(enabled ? mix.master : 0, ctx.currentTime, 0.05); }
 
-  return { init, resume, ping, pebbleFly, bristleClick, lash, bellow, damage, otolith, otolithTick, drip, sink, death, uiTick, titlePulse, heartbeat, makeHum, stopAllHums, setMix, setEnabled, isEnabled: () => enabled, ready: () => !!ctx };
+  return { init, resume, suspend, release, isHeld: () => held, ping, pebbleFly, bristleClick, lash, bellow, damage, otolith, otolithTick, drip, sink, death, uiTick, titlePulse, heartbeat, makeHum, stopAllHums, setMix, setEnabled, isEnabled: () => enabled, ready: () => !!ctx };
 })();

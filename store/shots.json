@@ -1,0 +1,41 @@
+{
+  "url": "http://127.0.0.1:8813/index.html?debug",
+  "out": "/Users/sherry/Documents/DEVPROJECTS/echo-depths/store/screenshots",
+  "width": 540,
+  "height": 960,
+  "dpr": 2,
+  "wait": 2350,
+  "colorScheme": "dark",
+  "seed": "(() => { const K='echodepths.save.v1'; if (localStorage.getItem(K)) return; localStorage.setItem(K, JSON.stringify({v:1, otoliths:41, evolutions:['lateral','fat'], settings:{palette:'ice', haptics:true, hapticStrength:1, audio:true, ambience:0.7, eyesClosed:false, calm:false}, stats:{runs:7, maxDepth:1362, shouts:9, silentClears:3, tutorialDone:true, deaths:{'a bristlemaw':4,'the warden':1,'you surfaced':2}}, daily:{}})); })()",
+  "shots": [
+    {
+      "name": "01-title",
+      "waitMs": 50
+    },
+    {
+      "name": "02-chirp",
+      "waitMs": 100,
+      "before": "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const mr=Math.random; Math.random=()=>0.3141; document.querySelector('[data-go=\"dive\"]').click(); Math.random=mr; await w(700); Game.debug.descend(); await w(2300); Game.ping('chirp'); await w(1150);})()"
+    },
+    {
+      "name": "03-shout",
+      "waitMs": 100,
+      "before": "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const c=document.getElementById('c'); const ev=(t,x,y)=>c.dispatchEvent(new PointerEvent(t,{clientX:x,clientY:y,pointerId:1,pointerType:'touch',bubbles:true,isPrimary:true,button:0})); ev('pointerdown',270,600); ev('pointermove',270,670); await w(1300); ev('pointerup',270,670); await w(500); Game.ping('shout'); await w(2100);})()"
+    },
+    {
+      "name": "04-throat",
+      "waitMs": 100,
+      "before": "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)); Game.debug.descend(); await w(2300); Game.ping('shout'); await w(2300);})()"
+    },
+    {
+      "name": "05-death",
+      "waitMs": 100,
+      "before": "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms));const c=document.getElementById('c'); const ev=(t,x,y)=>c.dispatchEvent(new PointerEvent(t,{clientX:x,clientY:y,pointerId:1,pointerType:'touch',bubbles:true,isPrimary:true,button:0})); ev('pointerdown',270,600); ev('pointermove',270,680); await w(2500); ev('pointermove',340,670); await w(2500); ev('pointermove',210,660); await w(2000); ev('pointerup',210,660); await w(300); Game.ping('shout'); await w(1500); Game.debug.hurt(9, 'an angler'); await w(3700);})()"
+    },
+    {
+      "name": "06-grotto",
+      "waitMs": 100,
+      "before": "(async()=>{const w=ms=>new Promise(r=>setTimeout(r,ms)); document.getElementById('d-surface').click(); await w(500); document.querySelector('[data-go=\"grotto\"]').click(); await w(950);})()"
+    }
+  ]
+}

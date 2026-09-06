@@ -1,5 +1,5 @@
 'use strict';
-// EchoDepths — small shared utilities (seeded RNG, math, formatting)
+// EchoDepths: small shared utilities (seeded RNG, math, formatting)
 const U = (() => {
   function mulberry32(a) {
     return function () {

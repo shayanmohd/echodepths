@@ -1,0 +1,5 @@
+A new face for the dark. The title screen is now a live sonar scene: a lamp hangs in a real cave, and every few seconds a ring of sound leaves it and lights the walls as it reaches them. Cyan on deep navy is the new default; your saved palette is kept.
+
+The cave stays silent behind the pause menu. The death screen shows the sonar art of your run clearly. The grotto has its cave drawn in. New sliders, icons and launcher icon.
+
+Nothing leaves your phone. Your save carries over.

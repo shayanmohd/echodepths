@@ -21,6 +21,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -33,7 +34,12 @@ import org.json.JSONArray
  * exactly as in Chrome). Native side adds amplitude-controlled haptics.
  */
 class MainActivity : ComponentActivity() {
-    private companion object { const val TAG = "EchoDepths" }
+    private companion object {
+        const val TAG = "EchoDepths"
+        /** The game's ground: deep navy, the same as --bg in the page. */
+        const val ABYSS = 0xFF050D16.toInt()
+    }
+    private var insetCss: String? = null
     private lateinit var web: WebView
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -49,11 +55,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        window.statusBarColor = ABYSS
+        window.navigationBarColor = ABYSS
 
         web = WebView(this).apply {
-            setBackgroundColor(Color.BLACK)
+            setBackgroundColor(ABYSS)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.mediaPlaybackRequiresUserGesture = false
@@ -78,7 +84,10 @@ class MainActivity : ComponentActivity() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 loader.shouldInterceptRequest(request.url)
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = true
-            override fun onPageFinished(view: WebView, url: String) { Log.i(TAG, "page finished: $url title=${view.title}") }
+            override fun onPageFinished(view: WebView, url: String) {
+                Log.i(TAG, "page finished: $url title=${view.title}")
+                insetCss?.let { view.evaluateJavascript(it, null) }
+            }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 Log.e(TAG, "load error ${error.errorCode} ${error.description} for ${request.url}")
             }
@@ -89,12 +98,25 @@ class MainActivity : ComponentActivity() {
         setContentView(web)
         web.loadUrl("https://appassets.androidplatform.net/www/index.html")
 
+        // Status bar and display cutout insets reach the page as --sat / --sab; position:fixed chrome pads itself with them.
+        ViewCompat.setOnApplyWindowInsetsListener(web) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val d = resources.displayMetrics.density
+            insetCss = "if(document.documentElement){" +
+                       "document.documentElement.style.setProperty('--sat','" + (bars.top / d) + "px');" +
+                       "document.documentElement.style.setProperty('--sab','" + (bars.bottom / d) + "px');}"
+            web.evaluateJavascript(insetCss ?: "", null)
+            insets
+        }
+        ViewCompat.requestApplyInsets(web)
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // Let the game decide: pause a run, or step back through menus; if idle on the title, finish.
-                web.evaluateJavascript("(function(){ if (window.Game && Game.state()==='run') { Game.pause(); return 'paused'; } return 'idle'; })()") { result ->
-                    if (result == null || result.contains("idle")) finish()
-                }
+                // The page gets first refusal on Back: pause a run, close a menu, surface from the death screen.
+                // Only when it returns false (the title screen) does the activity finish.
+                web.evaluateJavascript(
+                    "(function(){ try { return (window.App && App.back && App.back()) ? 'handled' : 'exit' } catch(e) { return 'exit' } })()"
+                ) { result -> if (result == null || !result.contains("handled")) finish() }
             }
         })
     }
@@ -106,10 +128,12 @@ class MainActivity : ComponentActivity() {
             it.hide(WindowInsetsCompat.Type.systemBars())
             it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        web.evaluateJavascript("window.App && App.onResume && App.onResume()", null)
     }
 
     override fun onPause() {
-        web.evaluateJavascript("window.Game && Game.pause()", null)
+        // Pause the run and silence the cave before the WebView stops ticking.
+        web.evaluateJavascript("if (window.App && App.onPause) { App.onPause() } else if (window.Game) { Game.pause() }", null)
         web.onPause()
         super.onPause()
     }
